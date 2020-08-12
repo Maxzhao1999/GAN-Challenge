@@ -106,7 +106,7 @@ def train_on_n (batch_size=32):
     # load real images (for later use)
 
     # get discriminator prediction
-    disc_out = np.ones([batch_size,1])+(np.random.rand(batch_size,1)-0.5)*2
+    disc_out = np.random.rand(batch_size,1)*0.5+0.7
 
     # train discriminator (for later use)
     # discriminator.train_on_batch(generated_images,np.zeros(generated_images.shape[0]))
@@ -114,7 +114,7 @@ def train_on_n (batch_size=32):
     GAN.train_on_batch(noise_gen,disc_out)
 
 for i in range(iters):
-    print("\r",i+1," out of ", iter, end="")
+    print("\r",i+1," out of ", iters, end="")
     train_on_n()
     # discriminator.predict
 # %%
@@ -133,11 +133,15 @@ ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
 ps.print_stats(10)
 '''
 # %%
-rand = np.random.rand(1,100)
+rand = np.random.rand(1000,100)
 # GAN.train_on_batch(rand,[1])
 img = generator.predict(np.random.rand(1,100))
 img = img.reshape(28,28)
 plt.imshow(img)
 
 plt.imsave("fig.png",img,dpi=300)
-discriminator.predict(img.reshape(1,28,28,1))
+
+eval = generator.predict(rand)
+eval = eval.reshape(1000,28,28,1)
+
+print("discriminator mean: ",np.mean(discriminator.predict(eval)))
