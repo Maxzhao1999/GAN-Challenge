@@ -101,7 +101,6 @@ np.zeros((3,3))
 # %%
 # def train_on_n (batch_size=32):
     # generate images from noise
-iters=100
 batch_size = 32
 for i in range(iters):
 
