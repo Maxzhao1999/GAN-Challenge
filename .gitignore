@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+GAN_model/
+discriminator_model
 
 # Distribution / packaging
 .Python
