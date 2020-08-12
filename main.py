@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import os
 import cProfile
 import pstats
+import random
 # from pstats import SortKey
 import timeit
 import re
@@ -74,7 +75,7 @@ generator = keras.Model(generator_input, generator_output, name='generator')
 generator.summary()
 
 # %%
-# tf.keras.utils.plot_model(generator)
+tf.keras.utils.plot_model(generator)
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data(path="mnist.npz")
 x_train=x_train.reshape(x_train.shape[0],28,28,1)/255
 x_test=x_test.reshape(x_test.shape[0],28,28,1)/255
@@ -83,8 +84,8 @@ y_train = np.ones(x_train.shape[0])
 x_fake = np.random.rand(*x_train.shape)
 y = np.append(np.ones(x_train.shape[0]),np.zeros(x_fake.shape[0]))
 x = np.append(x_train,x_fake,axis=0)
-
-discriminator.fit(x, y, epochs=1, batch_size=32)
+#
+# discriminator.fit(x, y, epochs=1, batch_size=32)
 
 # %%
 discriminator.trainable = False
@@ -98,25 +99,33 @@ GAN.summary()
 np.zeros((3,3))
 
 # %%
-def train_on_n (batch_size=32):
+# def train_on_n (batch_size=32):
     # generate images from noise
+iters=100
+batch_size = 32
+for i in range(iters):
+
     noise_gen = np.random.rand(batch_size,100)
     generated_images = generator.predict(noise_gen)
 
     # load real images (for later use)
+    true_images = np.array(random.sample(list(x_train),batch_size))
+
 
     # get discriminator prediction
     disc_out = np.random.rand(batch_size,1)*0.5+0.7
 
     # train discriminator (for later use)
-    # discriminator.train_on_batch(generated_images,np.zeros(generated_images.shape[0]))
-    # train GAN
-    GAN.train_on_batch(noise_gen,disc_out)
+    x = np.append(true_images, generated_images,axis=0)
+    y = np.append(np.ones(true_images.shape[0]),np.zeros(generated_images.shape[0]))
 
-for i in range(iters):
+    # train GAN
+    discriminator.train_on_batch(x,y)
+    GAN.train_on_batch(noise_gen,disc_out)
     print("\r",i+1," out of ", iters, end="")
-    train_on_n()
-    # discriminator.predict
+
+
+
 # %%
 '''
 pr = cProfile.Profile()
@@ -144,4 +153,4 @@ plt.imsave("fig.png",img,dpi=300)
 eval = generator.predict(rand)
 eval = eval.reshape(1000,28,28,1)
 
-print("discriminator mean: ",np.mean(discriminator.predict(eval)))
+print("discriminator mean: ", np.mean(discriminator.predict(eval)))
