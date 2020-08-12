@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -14,7 +15,9 @@ import io
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # %%
 path = '/Users/Max/OneDrive - Imperial College London/4th yr project/GAN-Challenge/scenes'
+iters = int(sys.argv[1])
 
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 # %%
 dropout = 0.4
@@ -81,7 +84,7 @@ x_fake = np.random.rand(*x_train.shape)
 y = np.append(np.ones(x_train.shape[0]),np.zeros(x_fake.shape[0]))
 x = np.append(x_train,x_fake,axis=0)
 
-discriminator.fit(x, y, nb_epoch=1, batch_size=32)
+discriminator.fit(x, y, epochs=1, batch_size=32)
 
 # %%
 discriminator.trainable = False
@@ -110,12 +113,12 @@ def train_on_n (batch_size=32):
     # train GAN
     GAN.train_on_batch(noise_gen,disc_out)
 
-iter=150
-for i in range(iter):
+for i in range(iters):
     print("\r",i+1," out of ", iter, end="")
     train_on_n()
     # discriminator.predict
 # %%
+'''
 pr = cProfile.Profile()
 pr.enable()
 
@@ -128,7 +131,7 @@ s = io.StringIO()
 sortby = SortKey.CUMULATIVE
 ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
 ps.print_stats(10)
-
+'''
 # %%
 rand = np.random.rand(1,100)
 # GAN.train_on_batch(rand,[1])
