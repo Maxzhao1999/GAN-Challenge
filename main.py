@@ -154,6 +154,5 @@ eval = eval.reshape(1000,28,28,1)
 
 print("discriminator mean: ", np.mean(discriminator.predict(eval)))
 
-discriminator.save("discriminator_model")
-generator.save("generator_model")
-# GAN.save("GAN_model")
+discriminator.save("discriminator_model.hdf5")
+generator.save("generator_model.hdf5")
