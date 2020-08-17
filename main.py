@@ -11,14 +11,29 @@ import pstats
 import random
 # from pstats import SortKey
 import timeit
+import pathlib
 import re
 import io
+import glob
+import PIL
+import PIL.Image
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # %%
 path = '/Users/Max/OneDrive - Imperial College London/4th yr project/GAN-Challenge/scenes'
 iters = int(sys.argv[1])
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+data_dir = pathlib.Path('scenes/ghibli/')
+images=list(data_dir.glob('*.jpeg'))
+PIL.Image.open(str(images[0]))
+
+batch_size = 32
+img_height = 180
+img_width = 180
+
+train_ds = tf.keras.preprocessing.image_dataset_from_directory(data_dir,validation_split=0.2,subset="training",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
+
+val_ds   = tf.keras.preprocessing.image_dataset_from_directory(data_dir,validation_split=0.2,subset="validation",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
 
 # %%
 dropout = 0.4
