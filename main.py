@@ -23,7 +23,7 @@ path = '/Users/Max/OneDrive - Imperial College London/4th yr project/GAN-Challen
 iters = int(sys.argv[1])
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-data_dir = pathlib.Path('scenes/ghibli/')
+data_dir = pathlib.Path('scenes/spirited_away/')
 images=list(data_dir.glob('*.jpeg'))
 PIL.Image.open(str(images[0]))
 
@@ -31,16 +31,22 @@ batch_size = 32
 img_height = 180
 img_width = 180
 
-train_ds = tf.keras.preprocessing.image_dataset_from_directory(data_dir,validation_split=0.2,subset="training",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
+train_ds = tf.keras.preprocessing.image_dataset_from_directory('scenes',validation_split=0.2,subset="training",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
 
-val_ds   = tf.keras.preprocessing.image_dataset_from_directory(data_dir,validation_split=0.2,subset="validation",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
+val_ds   = tf.keras.preprocessing.image_dataset_from_directory('scenes',validation_split=0.2,subset="validation",seed=123,image_size=(img_height, img_width),batch_size=batch_size)
 
+class_names = train_ds.class_names
+plt.figure(figsize=(10, 10))
+for images, labels in train_ds.take(1):
+    for i in range(9):
+        ax = plt.subplot(3, 3, i + 1)
+        plt.imshow(images[i].np().astype("uint8"))
+        plt.title(class_names[labels[i]])
+        plt.axis("off")
 # %%
 dropout = 0.4
 
 discriminator_input = keras.Input(shape=(28, 28, 1))
-discriminator_input.shape
-discriminator_input.dtype
 x = layers.Conv2D(16, 3, strides=2, activation='relu',
                   padding='same')(discriminator_input)
 x = layers.Dropout(dropout)(x)
