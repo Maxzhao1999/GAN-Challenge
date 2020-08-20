@@ -210,10 +210,5 @@ img = img.reshape(180,180,3)
 plt.imshow(img)
 plt.imsave("fig.png", img, dpi=300)
 
-eval = generator.predict(rand)
-eval = eval.reshape(1000, 28, 28, 1)
-
-print("discriminator mean: ", np.mean(discriminator.predict(eval)))
-
 discriminator.save("discriminator_model.hdf5")
 generator.save("generator_model.hdf5")
