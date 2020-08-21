@@ -28,23 +28,29 @@ data_dir = pathlib.Path('scenes/spirited_away/')
 images = list(data_dir.glob('*.jpeg'))
 
 batch_size = 32
-img_height = 180
-img_width = 180
+img_height = 28
+img_width = 28
+channels=3
+buffer_size=200
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=1)
+    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=32)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1)
+    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=32)
 
-train_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(train_ds.cardinality())))
-train=tf.data.Dataset.zip((train_ds,train_labels))
-val_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(val_ds.cardinality())))
-val=tf.data.Dataset.zip((val_ds,val_labels))
+train_ds.element_spec
+
+train_ds = train_ds.shuffle(buffer_size)
+# train_ds = train_ds.shuffle(buffer_size).batch(batch_size, drop_remainder=True)
+# train_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(train_ds.cardinality())))
+# train=tf.data.Dataset.zip((train_ds,train_labels))
+# val_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(val_ds.cardinality())))
+# val=tf.data.Dataset.zip((val_ds,val_labels))
 # %%
 dropout = 0.4
 
-discriminator_input = keras.Input(shape=(180, 180, 3))
+discriminator_input = keras.Input(shape=(img_height, img_width, channels))
 x = layers.Conv2D(16, 3, strides=2, activation='relu',
                   padding='same')(discriminator_input)
 x = layers.Dropout(dropout)(x)
@@ -65,7 +71,7 @@ discriminator.compile(loss='binary_crossentropy',
 # %%
 dropout = 0.4
 depth = 64+64+64+64
-dim = 45
+dim = np.int32(img_height/4)
 latent_dim = 100
 # In: 100
 # Out: dim x dim x depth
@@ -89,7 +95,7 @@ x = layers.Conv2DTranspose(int(depth/8), 5, padding='same')(x)
 x = layers.BatchNormalization(momentum=0.6)(x)
 x = layers.Activation('relu')(x)
 # Out: 28 x 28 x 1 grayscale image [0.0,1.0] per pix
-x = layers.Conv2DTranspose(3, 5, padding='same')(x)
+x = layers.Conv2DTranspose(channels, 5, padding='same')(x)
 generator_output = layers.Activation('sigmoid')(x)
 generator = keras.Model(generator_input, generator_output, name='generator')
 generator.summary()
@@ -125,7 +131,7 @@ class GAN(keras.Model):
 
         # Assemble labels discriminating real from fake images
         labels = tf.concat(
-            [tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0
+            [tf.ones((batch_size, 1))*random.random()*0.7+0.5, tf.zeros((batch_size, 1))*random.random()*0.3-0.4], axis=0
         )
         # Add random noise to the labels - important trick!
         labels += 0.05 * tf.random.uniform(tf.shape(labels))
@@ -150,6 +156,7 @@ class GAN(keras.Model):
         with tf.GradientTape() as tape:
             predictions = self.discriminator(self.generator(random_latent_vectors))
             g_loss = self.loss_fn(misleading_labels, predictions)
+
         grads = tape.gradient(g_loss, self.generator.trainable_weights)
         self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
         return {"d_loss": d_loss, "g_loss": g_loss}
@@ -163,28 +170,7 @@ gan.compile(
     loss_fn=keras.losses.BinaryCrossentropy(from_logits=True),
 )
 
-gan.fit(train, epochs=10)
-
-# for i in range(iters):
-
-    # noise_gen = np.random.rand(batch_size, 100)
-    # generated_images = generator.predict(noise_gen)
-    #
-    # # load real images (for later use)
-    # true_images = np.array(random.sample(list(train_ds),1))
-    #
-    # # get discriminator prediction
-    # disc_out = np.random.rand(batch_size, 1)*0.5+0.7
-    #
-    # # train discriminator (for later use)
-    # x = np.append(true_images, generated_images, axis=0)
-    # y = np.append(np.ones(true_images.shape[0]), np.zeros(
-    #     generated_images.shape[0]))
-    #
-    # # train GAN
-    # discriminator.train_on_batch(x, y)
-    # GAN.train_on_batch(noise_gen, disc_out)
-    # print("\r", i+1, " out of ", iters, end="")
+gan.fit(train_ds, epochs=100)
 
 # %%
 '''
@@ -205,8 +191,9 @@ ps.print_stats(10)
 rand = np.random.rand(1000, 100)
 # GAN.train_on_batch(rand,[1])
 img = generator.predict(np.random.rand(1, 100))
-img = img.reshape(180,180,3)
-
+img.shape
+img = img.reshape(img_width,img_height,channels)
+img
 plt.imshow(img)
 plt.imsave("fig.png", img, dpi=300)
 
