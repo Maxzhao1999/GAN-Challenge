@@ -28,7 +28,7 @@ batch_size = 32
 img_height = 32
 img_width = 32
 channels=3
-buffer_size=1024
+buffer_size=100
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=32)
@@ -56,7 +56,6 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 train_ds.element_spec
 
-train_ds = train_ds.shuffle(buffer_size)
 # train_ds = train_ds.shuffle(buffer_size).batch(batch_size, drop_remainder=True)
 # train_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(train_ds.cardinality())))
 # train=tf.data.Dataset.zip((train_ds,train_labels))
@@ -91,7 +90,7 @@ depth = 64+64+64+64
 dim = np.int(img_height/4)
 # In: 100
 # Out: dim x dim x depth
-generator_input = keras.Input(shape=(latent_dim,))
+generator_input = keras.Input(shape=(100,))
 x = layers.Dense(dim*dim*depth, input_dim=100)(generator_input)
 x = layers.BatchNormalization(momentum=0.6)(x)
 x = layers.Activation('relu')(x)
@@ -180,30 +179,6 @@ for i in range(iters):
     GAN.train_on_batch(noise_gen,disc_out)
     print("\r",i+1," out of ", iters, end="")
 
-# %%
-# Prepare the dataset. We use both the training & test MNIST digits.
-gan = GAN(discriminator=discriminator, generator=generator, latent_dim=latent_dim)
-gan.compile(
-    d_optimizer=keras.optimizers.Adam(learning_rate=0.0003),
-    g_optimizer=keras.optimizers.Adam(learning_rate=0.0003),
-    loss_fn=keras.losses.BinaryCrossentropy(from_logits=True),
-)
-
-# %%
-'''
-pr = cProfile.Profile()
-pr.enable()
-
-for i in range(1):
-    train_on_n()
-
-pr.disable()
-pr.print_stats('cumulative')
-s = io.StringIO()
-sortby = SortKey.CUMULATIVE
-ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-ps.print_stats(10)
-'''
 # %%
 rand = np.random.rand(1000, 100)
 # GAN.train_on_batch(rand,[1])
