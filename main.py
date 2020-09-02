@@ -9,7 +9,6 @@ import os
 import cProfile
 import pstats
 import random
-# from pstats import SortKey
 import timeit
 import pathlib
 import re
@@ -38,7 +37,6 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
 
-# iters=10
 plt.imshow(image/max(np.concatenate(np.concatenate(image))))
 train_ds = train_ds.repeat(iters//train_ds.cardinality()+1).shuffle(buffer_size)
 
@@ -53,14 +51,6 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=32)
-
-train_ds.element_spec
-
-# train_ds = train_ds.shuffle(buffer_size).batch(batch_size, drop_remainder=True)
-# train_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(train_ds.cardinality())))
-# train=tf.data.Dataset.zip((train_ds,train_labels))
-# val_labels = tf.data.Dataset.from_tensor_slices(np.float32(np.ones(val_ds.cardinality())))
-# val=tf.data.Dataset.zip((val_ds,val_labels))
 # %%
 dropout = 0.4
 
@@ -116,19 +106,6 @@ generator = keras.Model(generator_input, generator_output, name='generator')
 generator.summary()
 
 # %%
-tf.keras.utils.plot_model(generator)
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data(path="mnist.npz")
-x_train=x_train.reshape(x_train.shape[0],28,28,1)/255
-x_test=x_test.reshape(x_test.shape[0],28,28,1)/255
-y_test=np.ones(x_test.shape[0])
-y_train = np.ones(x_train.shape[0])
-x_fake = np.random.rand(*x_train.shape)
-y = np.append(np.ones(x_train.shape[0]),np.zeros(x_fake.shape[0]))
-x = np.append(x_train,x_fake,axis=0)
-#
-# discriminator.fit(x, y, epochs=1, batch_size=32)
-# train_ds.cardinality()
-# %%
 discriminator.trainable = False
 z = keras.Input(shape=(100,))
 gen = generator(z)
@@ -139,42 +116,24 @@ metrics=['accuracy'])
 GAN.summary()
 
 # %%
-# def train_on_n (batch_size=32):
-    # generate images from noise
-# batch_size = 32
-#
-# class GAN(keras.Model):
-#     def __init__(self, discriminator, generator):
-#         super(GAN, self).__init__()
-#         self.discriminator = discriminator
-#         self.generator = generator
-#
-#     def compile(self, d_optimizer, g_optimizer, loss_fn):
-#         super(GAN, self).compile()
-#         self.d_optimizer = d_optimizer
-#         self.g_optimizer = g_optimizer
-#         self.loss_fn = loss_fn
-#
-#     def train_step(self,real_images):
 iterator = iter(train_ds)
 
 for i in range(iters):
-    noise_gen = np.random.rand(batch_size,100)
-    generated_images = generator.predict(noise_gen)
-
     # load real images (for later use)
     true_images = iterator.get_next()
+
+    batch_size=len(true_images)
+
+    # generate images
+    noise_gen = np.random.rand(batch_size,100)
+    generated_images = generator.predict(noise_gen)
 
     # get discriminator prediction
     disc_out = np.random.rand(batch_size,1)*0.5+0.7
 
-    # train discriminator (for later use)
-    # x = np.append(true_images, generated_images,axis=0)
-    # y = np.append(np.ones(true_images.shape[0]),np.zeros(generated_images.shape[0]))
-
     # train GAN
     discriminator.train_on_batch(x=true_images,y=np.ones(batch_size))
-    discriminator.train_on_batch(x=generated_images,y=np.zeros(generated_images.shape[0]))
+    discriminator.train_on_batch(x=generated_images,y=np.zeros(batch_size))
 
     GAN.train_on_batch(noise_gen,disc_out)
     print("\r",i+1," out of ", iters, end="")
