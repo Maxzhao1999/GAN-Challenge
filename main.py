@@ -18,7 +18,7 @@ import PIL
 import PIL.Image
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 # %%
-iters = 500
+iters = int(sys.argv[1])
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 data_dir = pathlib.Path('scenes/spirited_away/')
 images = list(data_dir.glob('*.jpeg'))
@@ -36,7 +36,6 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
-
 
 plt.imshow(image/max(np.concatenate(np.concatenate(image))))
 train_ds = train_ds.unbatch().batch(32,drop_remainder=True).repeat(int(iters//train_ds.cardinality()+1)).shuffle(buffer_size)
