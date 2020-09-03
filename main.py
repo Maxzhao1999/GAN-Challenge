@@ -18,39 +18,29 @@ import PIL
 import PIL.Image
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 # %%
-iters = int(sys.argv[1])
+iters = 500
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 data_dir = pathlib.Path('scenes/spirited_away/')
 images = list(data_dir.glob('*.jpeg'))
 
 batch_size = 32
-img_height = 32
-img_width = 32
+img_height = 128
+img_width = 128
 channels=3
 buffer_size=100
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=32)
+    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=1,shuffle=True)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=32)
+    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
 
+
 plt.imshow(image/max(np.concatenate(np.concatenate(image))))
-train_ds = train_ds.repeat(iters//train_ds.cardinality()+1).shuffle(buffer_size)
+train_ds = train_ds.unbatch().batch(32,drop_remainder=True).repeat(int(iters//train_ds.cardinality()+1)).shuffle(buffer_size)
 
-batch_size = 32
-img_height = 28
-img_width = 28
-channels=3
-buffer_size=200
-
-train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=32)
-
-val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=32)
 # %%
 dropout = 0.4
 
@@ -116,27 +106,25 @@ metrics=['accuracy'])
 GAN.summary()
 
 # %%
-iterator = iter(train_ds)
-
 for i in range(iters):
-    # load real images (for later use)
-    true_images = iterator.get_next()
-
-    batch_size=len(true_images)
-
-    # generate images
-    noise_gen = np.random.rand(batch_size,100)
-    generated_images = generator.predict(noise_gen)
-
-    # get discriminator prediction
-    disc_out = np.random.rand(batch_size,1)*0.5+0.7
-
-    # train GAN
-    discriminator.train_on_batch(x=true_images,y=np.ones(batch_size))
-    discriminator.train_on_batch(x=generated_images,y=np.zeros(batch_size))
-
-    GAN.train_on_batch(noise_gen,disc_out)
+    iterator = iter(train_ds)
     print("\r",i+1," out of ", iters, end="")
+    for true_images in train_ds:
+        # set batch size
+        batch_size=len(true_images)
+
+        # generate images
+        noise_gen = np.random.rand(batch_size,100)
+        generated_images = generator.predict(noise_gen)
+
+        # get discriminator prediction
+        disc_out = np.random.rand(batch_size,1)*0.5+0.7
+
+        # train GAN
+        discriminator.train_on_batch(x=true_images,y=np.ones(batch_size))
+        discriminator.train_on_batch(x=generated_images,y=np.zeros(batch_size))
+
+        GAN.train_on_batch(noise_gen,disc_out)
 
 # %%
 rand = np.random.rand(1000, 100)
