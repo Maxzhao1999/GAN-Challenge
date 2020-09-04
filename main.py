@@ -24,9 +24,9 @@ data_dir = pathlib.Path('scenes/spirited_away/')
 images = list(data_dir.glob('*.jpeg'))
 
 batch_size = 32
-img_height = 128
-img_width = 128
-channels=3
+img_height = 64
+img_width = 64
+channels=1
 buffer_size=100
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -34,12 +34,13 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
+
+train_ds = train_ds.unbatch().map(tf.image.rgb_to_grayscale).batch(32,drop_remainder=True).cache().repeat(int(iters//train_ds.cardinality()+1)).cache()
+
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
 
-plt.imshow(image/max(np.concatenate(np.concatenate(image))))
-train_ds = train_ds.unbatch().batch(32,drop_remainder=True).repeat(int(iters//train_ds.cardinality()+1)).shuffle(buffer_size)
-
+plt.imshow(1-image.reshape(img_height,img_width)/max(np.concatenate(np.concatenate(image))),'Greys')
 # %%
 dropout = 0.4
 
@@ -105,10 +106,15 @@ metrics=['accuracy'])
 GAN.summary()
 
 # %%
+bl=1
 for i in range(iters):
     iterator = iter(train_ds)
     print("\r",i+1," out of ", iters, end="")
+    print("\n")
     for true_images in train_ds:
+        bl+=1
+        print("\r", bl, end="")
+
         # set batch size
         batch_size=len(true_images)
 
@@ -129,7 +135,7 @@ for i in range(iters):
 rand = np.random.rand(1000, 100)
 # GAN.train_on_batch(rand,[1])
 img = generator.predict(np.random.rand(1,100))
-img = img.reshape(img_height,img_width,channels)
+img = img.reshape(img_height,img_width)
 plt.imshow(img)
 
 plt.imsave("fig.png",img,dpi=300)
