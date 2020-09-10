@@ -18,9 +18,10 @@ import PIL
 import PIL.Image
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 # %%
-iters = int(sys.argv[1])
+# iters = int(sys.argv[1])
+iters = 1
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-data_dir = pathlib.Path('scenes/spirited_away/')
+data_dir = pathlib.Path('Cat')
 images = list(data_dir.glob('*.jpeg'))
 
 batch_size = 32
@@ -30,12 +31,12 @@ channels=1
 buffer_size=100
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=1,shuffle=True)
+    'Cat', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=1,shuffle=True)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'scenes', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
+    'Cat', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
 
-train_ds = train_ds.unbatch().map(tf.image.rgb_to_grayscale).batch(32,drop_remainder=True).cache().repeat(int(iters//train_ds.cardinality()+1)).cache()
+train_ds = train_ds.unbatch().map(tf.image.rgb_to_grayscale).batch(32,drop_remainder=True).cache().repeat(int(iters//train_ds.cardinality()+1))
 
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
