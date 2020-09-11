@@ -20,28 +20,31 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 # %%
 iters = int(sys.argv[1])
 # iters = 1
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+print("Num GPUs Available: ", len(
+    tf.config.experimental.list_physical_devices('GPU')))
 data_dir = pathlib.Path('Cat')
 images = list(data_dir.glob('*.jpeg'))
 
 batch_size = 32
 img_height = 64
 img_width = 64
-channels=1
-buffer_size=100
+channels = 1
+buffer_size = 100
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'Cat', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width),label_mode=None, batch_size=1,shuffle=True)
+    'Cat', validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width), label_mode=None, batch_size=1, shuffle=True)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    'Cat', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1,shuffle=True)
+    'Cat', validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width),  label_mode=None, batch_size=1, shuffle=True)
 
-train_ds = train_ds.unbatch().map(tf.image.rgb_to_grayscale).batch(32,drop_remainder=True).cache().repeat(int(iters//train_ds.cardinality()+1))
+train_ds = train_ds.unbatch().map(tf.image.rgb_to_grayscale).batch(
+    32, drop_remainder=True).repeat(int(iters//train_ds.cardinality()+1))
 
 for element in train_ds.take(1).as_numpy_iterator():
     image = element[0]
 
-plt.imshow(1-image.reshape(img_height,img_width)/max(np.concatenate(np.concatenate(image))),'Greys')
+plt.imshow(1-image.reshape(img_height, img_width)
+           / max(np.concatenate(np.concatenate(image))), 'Greys')
 # %%
 dropout = 0.4
 
@@ -101,45 +104,45 @@ discriminator.trainable = False
 z = keras.Input(shape=(100,))
 gen = generator(z)
 dis = discriminator(gen)
-GAN = keras.Model(z,dis)
+GAN = keras.Model(z, dis)
 GAN.compile(loss='binary_crossentropy', optimizer=optimizer,
-metrics=['accuracy'])
+            metrics=['accuracy'])
 GAN.summary()
 
 # %%
-bl=1
+bl = 1
 for i in range(iters):
     iterator = iter(train_ds)
-    print("\r",i+1," out of ", iters, end="")
+    print("\r", i+1, " out of ", iters, end="")
     print("\n")
     for true_images in train_ds:
-        bl+=1
-        print("\r", bl, end="")
-
+        bl += 1
         # set batch size
-        batch_size=len(true_images)
+        batch_size = len(true_images)
 
         # generate images
-        noise_gen = np.random.rand(batch_size,100)
+        noise_gen = np.random.rand(batch_size, 100)
         generated_images = generator.predict(noise_gen)
 
         # get discriminator prediction
-        disc_out = np.random.rand(batch_size,1)*0.5+0.7
+        disc_out = np.random.rand(batch_size, 1)*0.5+0.7
 
         # train GAN
-        discriminator.train_on_batch(x=true_images,y=np.ones(batch_size))
-        discriminator.train_on_batch(x=generated_images,y=np.zeros(batch_size))
+        discriminator.train_on_batch(x=true_images, y=np.ones(batch_size))
+        d_loss = discriminator.train_on_batch(
+            x=generated_images, y=np.zeros(batch_size))
 
-        GAN.train_on_batch(noise_gen,disc_out)
+        g_loss = GAN.train_on_batch(noise_gen, disc_out)
+        print("\r", 'batch: ', bl," g_loss: ", g_loss, ', d_loss: ', d_loss, end="")
 
 # %%
 rand = np.random.rand(1000, 100)
 # GAN.train_on_batch(rand,[1])
-img = generator.predict(np.random.rand(1,100))
-img = img.reshape(img_height,img_width)
+img = generator.predict(np.random.rand(1, 100))
+img = img.reshape(img_height, img_width)
 plt.imshow(img)
 
-plt.imsave("fig.png",img,dpi=300)
+plt.imsave("fig.png", img, dpi=300)
 
 discriminator.save("discriminator_model.hdf5")
 generator.save("generator_model.hdf5")
