@@ -18,8 +18,8 @@ import PIL
 import PIL.Image
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 # %%
-# iters = int(sys.argv[1])
-iters = 1
+iters = int(sys.argv[1])
+# iters = 1
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 data_dir = pathlib.Path('Cat')
 images = list(data_dir.glob('*.jpeg'))
