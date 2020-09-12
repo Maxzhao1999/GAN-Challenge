@@ -49,8 +49,8 @@ data_dir = pathlib.Path('Cat')
 images = list(data_dir.glob('*.jpe'))
 
 batch_size = 32
-img_height = 32
-img_width = 32
+img_height = 64
+img_width = 64
 channels = 3
 buffer_size = 100
 
